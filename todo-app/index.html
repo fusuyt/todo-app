@@ -1,0 +1,460 @@
+﻿<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Görev Yöneticisi | Türkçe Todo Uygulaması</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .task-item:hover .task-actions {
+            opacity: 1;
+        }
+        .priority-high {
+            border-left: 4px solid #ef4444;
+        }
+        .priority-medium {
+            border-left: 4px solid #f59e0b;
+        }
+        .priority-low {
+            border-left: 4px solid #10b981;
+        }
+        .custom-checkbox {
+            appearance: none;
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #d1d5db;
+            border-radius: 4px;
+            cursor: pointer;
+            position: relative;
+        }
+        .custom-checkbox:checked {
+            background-color: #3b82f6;
+            border-color: #3b82f6;
+        }
+        .custom-checkbox:checked::after {
+            content: "✓";
+            position: absolute;
+            color: white;
+            font-size: 14px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        .fade-in {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .slide-out {
+            animation: slideOut 0.3s ease-in-out forwards;
+        }
+        @keyframes slideOut {
+            to { opacity: 0; transform: translateX(100%); }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <div class="container mx-auto px-4 py-8 max-w-4xl">
+        <!-- Başlık ve Açıklama -->
+        <header class="text-center mb-10">
+            <h1 class="text-4xl font-bold text-indigo-700 mb-2">Görev Yöneticisi</h1>
+            <p class="text-gray-600">Günlük işlerinizi kolayca yönetin ve takip edin</p>
+        </header>
+
+        <!-- Görev Ekleme Formu -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+            <form id="task-form" class="flex flex-col sm:flex-row gap-4">
+                <div class="flex-grow">
+                    <input 
+                        type="text" 
+                        id="task-input" 
+                        placeholder="Yapılacak görevi yazın..." 
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        required
+                    >
+                </div>
+                <div class="flex gap-2">
+                    <select id="priority-select" class="px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <option value="low">Düşük Öncelik</option>
+                        <option value="medium" selected>Orta Öncelik</option>
+                        <option value="high">Yüksek Öncelik</option>
+                    </select>
+                    <button 
+                        type="submit" 
+                        class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-lg font-medium transition-colors flex items-center gap-2"
+                    >
+                        <i class="fas fa-plus"></i> Ekle
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Görev Filtreleme ve Toplu İşlemler -->
+        <div class="flex flex-wrap justify-between items-center mb-6 gap-4">
+            <div class="flex flex-wrap gap-3">
+                <button data-filter="all" class="filter-btn active bg-indigo-600 text-white px-4 py-2 rounded-full text-sm font-medium">
+                    Tüm Görevler
+                </button>
+                <button data-filter="high" class="filter-btn bg-white border border-gray-300 px-4 py-2 rounded-full text-sm font-medium flex items-center gap-1">
+                    <span class="w-2 h-2 rounded-full bg-red-500"></span> Acil
+                </button>
+                <button data-filter="medium" class="filter-btn bg-white border border-gray-300 px-4 py-2 rounded-full text-sm font-medium flex items-center gap-1">
+                    <span class="w-2 h-2 rounded-full bg-yellow-500"></span> Normal
+                </button>
+                <button data-filter="low" class="filter-btn bg-white border border-gray-300 px-4 py-2 rounded-full text-sm font-medium flex items-center gap-1">
+                    <span class="w-2 h-2 rounded-full bg-green-500"></span> Düşük
+                </button>
+                <button data-filter="completed" class="filter-btn bg-white border border-gray-300 px-4 py-2 rounded-full text-sm font-medium flex items-center gap-1">
+                    <i class="fas fa-check text-green-500"></i> Tamamlananlar
+                </button>
+            </div>
+            <button id="clear-completed" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2">
+                <i class="fas fa-trash-alt"></i> Tamamlananları Temizle
+            </button>
+        </div>
+
+        <!-- Görev İstatistikleri -->
+        <div class="bg-white rounded-lg shadow-md p-4 mb-6">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h3 class="font-medium text-gray-700">Toplam Görev</h3>
+                    <p id="total-tasks" class="text-2xl font-bold text-indigo-600">0</p>
+                </div>
+                <div>
+                    <h3 class="font-medium text-gray-700">Tamamlanan</h3>
+                    <p id="completed-tasks" class="text-2xl font-bold text-green-500">0</p>
+                </div>
+                <div>
+                    <h3 class="font-medium text-gray-700">Kalan</h3>
+                    <p id="remaining-tasks" class="text-2xl font-bold text-yellow-500">0</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Görev Listesi -->
+        <div id="task-list" class="space-y-3">
+            <!-- Görevler buraya eklenecek -->
+            <div class="text-center py-10 text-gray-500">
+                <i class="fas fa-tasks text-4xl mb-3"></i>
+                <p>Henüz görev eklemediniz</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bildirimler -->
+    <div id="success-message" class="fixed bottom-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg hidden flex items-center gap-2">
+        <i class="fas fa-check-circle"></i>
+        <span class="message-text">Görev başarıyla eklendi!</span>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // LocalStorage'dan görevleri yükle
+            let tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+            let currentFilter = 'all';
+            
+            // DOM elementleri
+            const taskForm = document.getElementById('task-form');
+            const taskInput = document.getElementById('task-input');
+            const prioritySelect = document.getElementById('priority-select');
+            const taskList = document.getElementById('task-list');
+            const filterButtons = document.querySelectorAll('.filter-btn');
+            const totalTasksEl = document.getElementById('total-tasks');
+            const completedTasksEl = document.getElementById('completed-tasks');
+            const remainingTasksEl = document.getElementById('remaining-tasks');
+            const successMessage = document.getElementById('success-message');
+            const clearCompletedBtn = document.getElementById('clear-completed');
+            
+            // Görev ekleme
+            taskForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const taskText = taskInput.value.trim();
+                if (taskText === '') return;
+                
+                const newTask = {
+                    id: Date.now(),
+                    text: taskText,
+                    priority: prioritySelect.value,
+                    completed: false,
+                    createdAt: new Date().toISOString()
+                };
+                
+                tasks.push(newTask);
+                saveTasks();
+                renderTasks();
+                
+                // Formu temizle
+                taskInput.value = '';
+                taskInput.focus();
+                
+                // Başarı mesajını göster
+                showSuccessMessage('Görev başarıyla eklendi!');
+            });
+            
+            // Görevleri render etme
+            function renderTasks() {
+                // Filtreleme
+                let filteredTasks = tasks;
+                if (currentFilter !== 'all') {
+                    if (currentFilter === 'completed') {
+                        filteredTasks = tasks.filter(task => task.completed);
+                    } else {
+                        filteredTasks = tasks.filter(task => task.priority === currentFilter);
+                    }
+                }
+                
+                // İstatistikleri güncelle
+                updateStats();
+                
+                if (filteredTasks.length === 0) {
+                    taskList.innerHTML = `
+                        <div class="text-center py-10 text-gray-500">
+                            <i class="fas fa-tasks text-4xl mb-3"></i>
+                            <p>${currentFilter === 'completed' ? 'Tamamlanmış görev bulunmamaktadır' : 'Görev bulunmamaktadır'}</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                // Görevleri sırala (tamamlanmayanlar üstte, yüksek öncelikli önce)
+                filteredTasks.sort((a, b) => {
+                    if (a.completed !== b.completed) {
+                        return a.completed ? 1 : -1;
+                    }
+                    
+                    const priorityOrder = { high: 3, medium: 2, low: 1 };
+                    return priorityOrder[b.priority] - priorityOrder[a.priority];
+                });
+                
+                // Görevleri listeye ekle
+                taskList.innerHTML = '';
+                filteredTasks.forEach(task => {
+                    const taskEl = document.createElement('div');
+                    taskEl.className = `bg-white rounded-lg shadow-sm p-4 flex items-center justify-between fade-in priority-${task.priority} ${task.completed ? 'opacity-70' : ''}`;
+                    taskEl.dataset.id = task.id;
+                    
+                    taskEl.innerHTML = `
+                        <div class="flex items-center gap-3 flex-grow">
+                            <input 
+                                type="checkbox" 
+                                ${task.completed ? 'checked' : ''} 
+                                data-id="${task.id}"
+                                class="custom-checkbox task-checkbox"
+                            >
+                            <span class="${task.completed ? 'line-through text-gray-500' : 'text-gray-800'}">${task.text}</span>
+                            <span class="text-xs text-gray-500 hidden sm:block">
+                                ${formatDate(task.createdAt)}
+                            </span>
+                        </div>
+                        <div class="task-actions opacity-0 transition-opacity flex gap-2">
+                            <button data-id="${task.id}" class="edit-btn p-2 text-gray-500 hover:text-indigo-600">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button data-id="${task.id}" class="delete-btn p-2 text-gray-500 hover:text-red-600">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                        <div class="ml-2">
+                            ${getPriorityBadge(task.priority)}
+                        </div>
+                    `;
+                    
+                    taskList.appendChild(taskEl);
+                });
+                
+                // Event listener'ları ekle
+                addEventListeners();
+            }
+            
+            // Öncelik badge'i oluşturma
+            function getPriorityBadge(priority) {
+                const badges = {
+                    high: '<span class="px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full">Acil</span>',
+                    medium: '<span class="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full">Normal</span>',
+                    low: '<span class="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">Düşük</span>'
+                };
+                return badges[priority];
+            }
+            
+            // Tarih formatlama
+            function formatDate(dateString) {
+                const date = new Date(dateString);
+                return date.toLocaleDateString('tr-TR', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            }
+            
+            // Event listener'ları ekleme
+            function addEventListeners() {
+                // Tamamlama checkbox'ları
+                document.querySelectorAll('.task-checkbox').forEach(checkbox => {
+                    checkbox.addEventListener('change', function() {
+                        const taskId = parseInt(this.dataset.id);
+                        const task = tasks.find(t => t.id === taskId);
+                        if (task) {
+                            task.completed = this.checked;
+                            saveTasks();
+                            renderTasks();
+                            showSuccessMessage(`Görev ${task.completed ? 'tamamlandı' : 'tamamlanmadı'} olarak işaretlendi!`);
+                        }
+                    });
+                });
+                
+                // Silme butonları
+                document.querySelectorAll('.delete-btn').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const taskId = parseInt(this.dataset.id);
+                        const task = tasks.find(t => t.id === taskId);
+                        
+                        if (task && confirm(`"${task.text}" görevini silmek istediğinize emin misiniz?`)) {
+                            const taskElement = document.querySelector(`[data-id="${taskId}"]`);
+                            if (taskElement) {
+                                taskElement.classList.add('slide-out');
+                                setTimeout(() => {
+                                    tasks = tasks.filter(t => t.id !== taskId);
+                                    saveTasks();
+                                    renderTasks();
+                                    showSuccessMessage('Görev başarıyla silindi!');
+                                }, 300);
+                            }
+                        }
+                    });
+                });
+                
+                // Düzenleme butonları
+                document.querySelectorAll('.edit-btn').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const taskId = parseInt(this.dataset.id);
+                        const task = tasks.find(t => t.id === taskId);
+                        if (task) {
+                            taskInput.value = task.text;
+                            prioritySelect.value = task.priority;
+                            
+                            // Form submit'ini güncelleme olarak ayarla
+                            taskForm.removeEventListener('submit', taskForm._submitHandler);
+                            taskForm._submitHandler = function(e) {
+                                e.preventDefault();
+                                const taskText = taskInput.value.trim();
+                                if (taskText === '') return;
+                                
+                                task.text = taskText;
+                                task.priority = prioritySelect.value;
+                                saveTasks();
+                                renderTasks();
+                                showSuccessMessage('Görev başarıyla güncellendi!');
+                                
+                                // Formu eski haline getir
+                                taskInput.value = '';
+                                prioritySelect.value = 'medium';
+                                taskForm.removeEventListener('submit', taskForm._submitHandler);
+                                taskForm.addEventListener('submit', taskForm._originalSubmitHandler);
+                            };
+                            
+                            taskForm.addEventListener('submit', taskForm._submitHandler);
+                        }
+                    });
+                });
+            }
+            
+            // Orijinal form submit handler'ını sakla
+            taskForm._originalSubmitHandler = taskForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const taskText = taskInput.value.trim();
+                if (taskText === '') return;
+                
+                const newTask = {
+                    id: Date.now(),
+                    text: taskText,
+                    priority: prioritySelect.value,
+                    completed: false,
+                    createdAt: new Date().toISOString()
+                };
+                
+                tasks.push(newTask);
+                saveTasks();
+                renderTasks();
+                
+                taskInput.value = '';
+                showSuccessMessage('Görev başarıyla eklendi!');
+            });
+            
+            // Filtreleme butonları
+            filterButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    filterButtons.forEach(btn => {
+                        btn.classList.remove('active', 'bg-indigo-600', 'text-white');
+                        btn.classList.add('bg-white', 'border', 'border-gray-300');
+                    });
+                    
+                    this.classList.add('active', 'bg-indigo-600', 'text-white');
+                    this.classList.remove('bg-white', 'border', 'border-gray-300');
+                    
+                    currentFilter = this.dataset.filter;
+                    renderTasks();
+                });
+            });
+            
+            // Tamamlananları temizle butonu
+            clearCompletedBtn.addEventListener('click', function() {
+                const completedTasks = tasks.filter(t => t.completed);
+                if (completedTasks.length === 0) {
+                    showSuccessMessage('Silinecek tamamlanmış görev bulunmamaktadır');
+                    return;
+                }
+                
+                if (confirm(`${completedTasks.length} tamamlanmış görevi silmek istediğinize emin misiniz?`)) {
+                    tasks = tasks.filter(t => !t.completed);
+                    saveTasks();
+                    renderTasks();
+                    showSuccessMessage('Tamamlanan görevler başarıyla silindi!');
+                }
+            });
+            
+            // İstatistikleri güncelleme
+            function updateStats() {
+                const total = tasks.length;
+                const completed = tasks.filter(t => t.completed).length;
+                const remaining = total - completed;
+                
+                totalTasksEl.textContent = total;
+                completedTasksEl.textContent = completed;
+                remainingTasksEl.textContent = remaining;
+                
+                // Tamamlananları temizle butonunu göster/gizle
+                if (completed > 0) {
+                    clearCompletedBtn.classList.remove('hidden');
+                } else {
+                    clearCompletedBtn.classList.add('hidden');
+                }
+            }
+            
+            // Başarı mesajını gösterme
+            function showSuccessMessage(message) {
+                const messageText = successMessage.querySelector('.message-text');
+                messageText.textContent = message;
+                successMessage.classList.remove('hidden');
+                setTimeout(() => {
+                    successMessage.classList.add('hidden');
+                }, 3000);
+            }
+            
+            // Görevleri kaydetme
+            function saveTasks() {
+                localStorage.setItem('tasks', JSON.stringify(tasks));
+            }
+            
+            // İlk render
+            renderTasks();
+        });
+    </script>
+</body>
+</html>

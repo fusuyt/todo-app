@@ -57,33 +57,6 @@
         }
     </style>
 
-<!-- Firebase SDK'ları -->
-<script type="module">
- // Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
-
-// Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
-const firebaseConfig = {
-  apiKey: "AIzaSyCf9KkAKDl1zcscn8b-_LzH0UDP-PPNd7s",
-  authDomain: "gorev-yonetici.firebaseapp.com",
-  projectId: "gorev-yonetici",
-  storageBucket: "gorev-yonetici.firebasestorage.app",
-  messagingSenderId: "680849357208",
-  appId: "1:680849357208:web:7bfce4e49a800a470113ed",
-  measurementId: "G-GX31SSL9LQ"
-};
-
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
-
-  window.firebaseDB = db; // Uygulamada global erişim için
-  window.firebaseCollection = collection(db, "tasks"); // "tasks" koleksiyonu
-</script>
 
 
 <!-- Firebase SDK -->
